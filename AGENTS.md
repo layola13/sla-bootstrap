@@ -54,7 +54,12 @@ dev 插件安装（改动插件源码后）：`cd sa_plugin_sla && SA_PLUGIN_DEV
 - `3f5d571` 阶段 5 起点：lowering_rules.sla 移植 Y 型共享纯决策函数首批（isTemporaryRegisterName/abiCallArgCapKind/moveExprConsumesSource/isExcludedAggregateHomeName），4/4 PASS。SLA 无 str_starts，前缀判断用字节数组+长度。
 
 ## 已移植模块汇总（均可 sa check + test）
-token(122) / lexer(302) / ast(543,58tag+84struct) / checker(165) / parser(~100) / lowering_rules(~70)。对拍 harness：tag 名集序 + 关键字表全等。
+token(122) / lexer(302) / ast(543,58tag+84struct) / checker(165) / parser(~100) / lowering_rules(~90)。对拍 harness：tag 名集序 + 关键字表全等。全模块回归 6/6 check+test 通过。
+
+## 冻结语料与基线（G6 基础，已落 fixtures/）
+- fixtures/corpus/：50 个代表性 .sla（递归/enum/闭包/HashMap/async），fixtures/MANIFEST.sha256 校验通过。
+- fixtures/BASELINE_VERDICTS.txt：stage0 sa check verdict 名集 = 49 PASS / 1 SKIP:import-path(04_config) / 0 FAIL。阶段出口门对拍基线。
+- 注意：fixtures 里的 .sla 若含 @import，相对路径解析会变（04_config 因此 SKIP）；对拍时这类应保留原目录结构或标 SKIP，不当作真失败。
 - 验证状态：token/ast/checker 均 `sa check` 通过；checker @test 4/4 PASS、ast 1/1 PASS；本地 @import 接缝可用；对拍 harness PASS。
 - 参考架构：layola13/sla Rust 版 11-crate 单向依赖拓扑（sla-abi/lexer/ast/parser/checker/lowering/codegen-text/codegen-sab/plugin/oracle/cli）；token/ast/checker 的 Rust 实现是逐字段镜像规格，可直接对照。
 
