@@ -53,6 +53,12 @@ dev 插件安装（改动插件源码后）：`cd sa_plugin_sla && SA_PLUGIN_DEV
 - `58caaa2` 阶段 3 起点：parser.sla Pratt 表达式核心（binding power + prefix/infix），@test 验证 1+2*3=7 PASS；token.sla 加 make_token（跨模块 import 构造辅助）。依赖用 `@import "crates/sla-lexer/src/token.sla"`（相对仓库根，非文件目录）。
 - `3f5d571` 阶段 5 起点：lowering_rules.sla 移植 Y 型共享纯决策函数首批（isTemporaryRegisterName/abiCallArgCapKind/moveExprConsumesSource/isExcludedAggregateHomeName），4/4 PASS。SLA 无 str_starts，前缀判断用字节数组+长度。
 
+## G4 突破（2026-11-17，纯 SLA 插件可被宿主加载）
+- **G4 探针成功**（g4probe/，已推）：纯 SLA 源码 `g4_plugin.sla`（extern "C" fn 填 64 字节 descriptor）+ `g4.sai` 契约，经 `sa build-lib` 产出 .so 导出 `saasm_plugin_descriptor_v1_fn`，宿主 `sa plugin list` 枚举到且 0 条 load-skip 诊断 = descriptor 加载并校验通过（abi_version=1/size=64/name 非空）。报告见 g4probe/G4_PROBE.md。
+- **关键认知纠正**：SLA 不是"没有导出概念"——`extern "C" fn`/普通 fn 以原名发射（无 sla__ 前缀），SLA codegen 把 build-lib 契约条目降为 SA `@export fn`；宿主接受 `saasm_plugin_descriptor_v1_fn(out)` 函数形式（loadDescriptor 先试数据符号再试 _fn），绕开"SA 数据符号不可导出"的限制。**不需要新语言原语**（用户禁止手写 SA 胶水，此路径满足）。
+- **sci build-lib bug 已修**（sci `6e47887b`，已推）：generateLibGlueSa 的 @export 包装函数 call 后未 retire 参数 → 每个有参数的导出函数 MemoryLeak（官方 build_lib_probe bl_add 在 transfer 前基线即失败）。修法：call 后对每个参数发 `!x`。shared 库 probe 现已 PROBE_OK。
+- g4probe/sap.json + no-op build.zig + src/plugin.zig 只是安装器 text-source 门槛占位，**不进入产物**；插件 ABI 全由 SLA 表达。net 权限声明格式仍需匹配宿主校验（当前以部分成功态完成加载验证）。
+
 ## 已移植模块汇总（均可 sa check + test）
 token(122) / lexer(302) / ast(543,58tag+84struct) / checker(165) / parser(~100) / lowering_rules(~90)。对拍 harness：tag 名集序 + 关键字表全等。全模块回归 6/6 check+test 通过。
 
