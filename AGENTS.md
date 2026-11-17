@@ -49,6 +49,7 @@ dev 插件安装（改动插件源码后）：`cd sa_plugin_sla && SA_PLUGIN_DEV
 - `bef3f1f` 阶段 1 地基：ast.sla（Node 表示）、checker.sla（仿射状态机）。
 - `43e8a78` 阶段 1 补全：ast 补齐 58 个 Node tag（声明序对齐 Zig union/Rust node.rs）、checker 加表达式类型推断。
 - `fc8454f` 阶段 1 深化：ast 展开全部 84 个 payload struct（543 行）、checker 加调用 ABI 能力与借用释放（@test 4/4）、tools/crosscheck_tags.py 对拍 harness（lexer 93/93、ast 58/58 名集序全等）。
+- `c60fbd0` 阶段 0 核心：lexer.sla 完整 next()（关键字 u64 字节打包、hex/浮点/符号/字符串/注释），@test 3/3；crosscheck 增加关键字表 1:1（36/36）。关键字打包坑：len 不能与第8字节重叠，改长度单列判定。
 - 验证状态：token/ast/checker 均 `sa check` 通过；checker @test 4/4 PASS、ast 1/1 PASS；本地 @import 接缝可用；对拍 harness PASS。
 - 参考架构：layola13/sla Rust 版 11-crate 单向依赖拓扑（sla-abi/lexer/ast/parser/checker/lowering/codegen-text/codegen-sab/plugin/oracle/cli）；token/ast/checker 的 Rust 实现是逐字段镜像规格，可直接对照。
 
