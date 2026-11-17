@@ -1,0 +1,7 @@
+.zig-cache/
+.sla-cache/
+.sa_cache/
+zig-out/
+stage0/bin/
+stage0/lib/
+*.so
