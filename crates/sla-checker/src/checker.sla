@@ -91,3 +91,75 @@ fn op_borrow_mut(s: u16) -> MoveResult {
         panic(5);
     };
 }
+
+// ---- 表达式类型推断（阶段 1 切片，对齐 sla-checker 的 Primitive）----
+// 类型 kind（i32 常量）：对齐 Rust Type::Primitive 分类与 Zig PrimType。
+const TY_UNKNOWN: i32 = 0;
+const TY_BOOL: i32 = 1;
+const TY_INT: i32 = 2;
+const TY_FLOAT: i32 = 3;
+const TY_STRING: i32 = 4;
+const TY_PTR: i32 = 5;
+const TY_VOID: i32 = 6;
+
+const DIAG_TYPE_MISMATCH: i32 = 1004;
+
+// 字面量 kind -> 类型（对齐 ast.sla 的 LIT_* 常量）。
+fn type_of_literal(lit_kind: i32) -> i32 {
+    if lit_kind == 0 { return TY_INT; };      // LIT_INT
+    if lit_kind == 1 { return TY_FLOAT; };    // LIT_FLOAT
+    if lit_kind == 2 { return TY_STRING; };   // LIT_STRING
+    if lit_kind == 3 { return TY_BOOL; };     // LIT_BOOL
+    return TY_UNKNOWN;
+}
+
+// 二元运算结果类型（对齐 type_checker.zig checkBinary 的数值提升规则）。
+// op: 0=add 1=sub 2=mul 3=div 4=eq 5=ne 6=lt 7=and 8=or
+struct TypeResult {
+    diag: i32,
+    ty: i32,
+}
+fn type_binary(op: i32, lhs: i32, rhs: i32) -> TypeResult {
+    // 比较运算：同类型可比，结果 bool。
+    if op == 4 || op == 5 || op == 6 {
+        if lhs == rhs {
+            return TypeResult{ diag: DIAG_OK, ty: TY_BOOL };
+        };
+        return TypeResult{ diag: DIAG_TYPE_MISMATCH, ty: TY_UNKNOWN };
+    };
+    // 逻辑运算：要求 bool。
+    if op == 7 || op == 8 {
+        if lhs == TY_BOOL && rhs == TY_BOOL {
+            return TypeResult{ diag: DIAG_OK, ty: TY_BOOL };
+        };
+        return TypeResult{ diag: DIAG_TYPE_MISMATCH, ty: TY_UNKNOWN };
+    };
+    // 算术运算：同数值类型（int/int 或 float/float）结果同类型。
+    if lhs == rhs && (lhs == TY_INT || lhs == TY_FLOAT) {
+        return TypeResult{ diag: DIAG_OK, ty: lhs };
+    };
+    return TypeResult{ diag: DIAG_TYPE_MISMATCH, ty: TY_UNKNOWN };
+}
+
+@test "checker: expression types"() {
+    let ti = type_of_literal(0);
+    if ti != TY_INT {
+        panic(6);
+    };
+    let tf = type_of_literal(1);
+    if tf != TY_FLOAT {
+        panic(7);
+    };
+    let add = type_binary(0, ti, ti);
+    if add.diag != DIAG_OK || add.ty != TY_INT {
+        panic(8);
+    };
+    let eq = type_binary(4, ti, ti);
+    if eq.diag != DIAG_OK || eq.ty != TY_BOOL {
+        panic(9);
+    };
+    let bad = type_binary(0, ti, tf);
+    if bad.diag != DIAG_TYPE_MISMATCH {
+        panic(10);
+    };
+}
