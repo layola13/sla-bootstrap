@@ -1,0 +1,122 @@
+// sla-lexer / Token 类型（阶段 0 移植起点）
+//
+// 对应 Zig 源：sa_plugin_sla/src/lexer.zig:3-114 的 Token / Token.Loc / Token.Tag。
+// 参考 Rust 源：layola13/sla/crates/sla-lexer/src/token.rs（一一镜像，声明序同 Zig）。
+//
+// 表示策略（阶段 0 探针实测结论，见 crates/sla-lexer/STAGE0_PROBE.md）：
+//   Zig 的 Token.Tag 是 enum；SLA 层用 i32 tag 常量 + @const 表达，而非 enum。
+//   原因：本编译器对「两个独立初始化的 enum 变体字面量用 == 比较」语义不可靠
+//   （探针实证：E::A == E::A 在两支独立 let 上为 false），而自举 lexer 需要
+//   高频比较 tag。用 match 消费 enum 正常（官方 06_enum_and_match demo 通过），
+//   但 tag 比较场景选整数常量更稳，且逐字节发射对拍时值确定。
+//   这是一条显式登记的表示策略，不是静默降级。
+
+// Token.Tag —— 用 i32 常量表达，声明序对齐 Zig Token.Tag（lexer.zig:12-113）。
+const TAG_EOF: i32 = 0;
+const TAG_INVALID: i32 = 1;
+const TAG_IDENTIFIER: i32 = 2;
+const TAG_INT_LITERAL: i32 = 3;
+const TAG_FLOAT_LITERAL: i32 = 4;
+const TAG_STRING_LITERAL: i32 = 5;
+const TAG_TEMPLATE_START: i32 = 6;
+const TAG_TEMPLATE_STRING: i32 = 7;
+const TAG_TEMPLATE_INTERP: i32 = 8;
+const TAG_TEMPLATE_END: i32 = 9;
+// 关键字 28 项（lexer.zig:28-63）
+const TAG_KEYWORD_STRUCT: i32 = 10;
+const TAG_KEYWORD_UNION: i32 = 11;
+const TAG_KEYWORD_ENUM: i32 = 12;
+const TAG_KEYWORD_TRAIT: i32 = 13;
+const TAG_KEYWORD_OVERLOAD: i32 = 14;
+const TAG_KEYWORD_DYN: i32 = 15;
+const TAG_KEYWORD_IMPL: i32 = 16;
+const TAG_KEYWORD_MOD: i32 = 17;
+const TAG_KEYWORD_USING: i32 = 18;
+const TAG_KEYWORD_PUB: i32 = 19;
+const TAG_KEYWORD_EXTERN: i32 = 20;
+const TAG_KEYWORD_ASYNC: i32 = 21;
+const TAG_KEYWORD_AWAIT: i32 = 22;
+const TAG_KEYWORD_UNSAFE: i32 = 23;
+const TAG_KEYWORD_AS: i32 = 24;
+const TAG_KEYWORD_FN: i32 = 25;
+const TAG_KEYWORD_IF: i32 = 26;
+const TAG_KEYWORD_ELSE: i32 = 27;
+const TAG_KEYWORD_MATCH: i32 = 28;
+const TAG_KEYWORD_SWITCH: i32 = 29;
+const TAG_KEYWORD_RETURN: i32 = 30;
+const TAG_KEYWORD_FOR: i32 = 31;
+const TAG_KEYWORD_WHILE: i32 = 32;
+const TAG_KEYWORD_BREAK: i32 = 33;
+const TAG_KEYWORD_CONTINUE: i32 = 34;
+const TAG_KEYWORD_IN: i32 = 35;
+const TAG_KEYWORD_LET: i32 = 36;
+const TAG_KEYWORD_CONST: i32 = 37;
+const TAG_KEYWORD_VAR: i32 = 38;
+const TAG_KEYWORD_INLINE: i32 = 39;
+const TAG_KEYWORD_MACRO: i32 = 40;
+const TAG_KEYWORD_MUT: i32 = 41;
+const TAG_KEYWORD_TYPE: i32 = 42;
+const TAG_KEYWORD_GO: i32 = 43;
+const TAG_KEYWORD_DEFER: i32 = 44;
+const TAG_KEYWORD_SELECT: i32 = 45;
+
+// 符号（lexer.zig:66-112）。数值延续，逐项一一对应，供差分对拍按名映射。
+const TAG_PLUS: i32 = 46;
+const TAG_PLUS_EQUAL: i32 = 47;
+const TAG_MINUS_EQUAL: i32 = 48;
+const TAG_ASTERISK_EQUAL: i32 = 49;
+const TAG_SLASH_EQUAL: i32 = 50;
+const TAG_PERCENT_EQUAL: i32 = 51;
+const TAG_PIPE_EQUAL: i32 = 52;
+const TAG_AMPERSAND_EQUAL: i32 = 53;
+const TAG_MINUS: i32 = 54;
+const TAG_ASTERISK: i32 = 55;
+const TAG_SLASH: i32 = 56;
+const TAG_PERCENT: i32 = 57;
+const TAG_EQUAL: i32 = 58;
+const TAG_EQUAL_EQUAL: i32 = 59;
+const TAG_BANG_EQUAL: i32 = 60;
+const TAG_LESS_EQUAL: i32 = 61;
+const TAG_GREATER_EQUAL: i32 = 62;
+const TAG_AMPERSAND: i32 = 63;
+const TAG_AMP_AMP: i32 = 64;
+const TAG_CARET: i32 = 65;
+const TAG_BANG: i32 = 66;
+const TAG_PIPE: i32 = 67;
+const TAG_PIPE_PIPE: i32 = 68;
+const TAG_LESS_LESS: i32 = 69;
+const TAG_GREATER_GREATER: i32 = 70;
+const TAG_SPACESHIP: i32 = 71;
+const TAG_DOT: i32 = 72;
+const TAG_COMMA: i32 = 73;
+const TAG_SEMICOLON: i32 = 74;
+const TAG_COLON: i32 = 75;
+const TAG_DOUBLE_COLON: i32 = 76;
+const TAG_L_PAREN: i32 = 77;
+const TAG_R_PAREN: i32 = 78;
+const TAG_L_BRACE: i32 = 79;
+const TAG_R_BRACE: i32 = 80;
+const TAG_L_BRACKET: i32 = 81;
+const TAG_R_BRACKET: i32 = 82;
+const TAG_LESS_THAN: i32 = 83;
+const TAG_GREATER_THAN: i32 = 84;
+const TAG_ARROW: i32 = 85;
+const TAG_FAT_ARROW: i32 = 86;
+const TAG_RANGE: i32 = 87;
+const TAG_QUESTION_MARK: i32 = 88;
+const TAG_QUESTION_QUESTION: i32 = 89;
+const TAG_QUESTION_QUESTION_EQUAL: i32 = 90;
+const TAG_QUESTION_DOT: i32 = 91;
+const TAG_AT: i32 = 92;
+
+// Token.Loc —— 对齐 Zig lexer.zig:7-10（字节偏移 [start,end)）。
+struct Loc {
+    start: usize,
+    end: usize,
+}
+
+// Token —— 对齐 Zig lexer.zig:3-10。tag 字段为 i32（见上表示策略）。
+struct Token {
+    tag: i32,
+    loc: Loc,
+}
