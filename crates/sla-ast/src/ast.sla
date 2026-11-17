@@ -76,6 +76,388 @@ struct Span {
     end: usize,
 }
 
+// ---- 全部 84 个 payload struct（S_ 前缀，类型按 arena/intern id 归约）----
+struct S_Program {
+    decls: u64,
+}
+struct S_StructDecl {
+    name: u64,
+    derives: u64,
+    generics: u64,
+    fields: u64,
+    is_union: bool,
+    is_opaque: bool,
+}
+struct S_EnumDecl {
+    name: u64,
+    generics: u64,
+    variants: u64,
+}
+struct S_EnumVariant {
+    name: u64,
+    fields: u64,
+    discriminant: u64,
+}
+struct S_ImplDecl {
+    trait_name: u64,
+    target_ty: u64,
+    methods: u64,
+}
+struct S_TypeAliasDecl {
+    name: u64,
+    components: u64,
+}
+struct S_OverloadDecl {
+    target_ty: u64,
+    methods: u64,
+}
+struct S_TraitMethod {
+    name: u64,
+    params: u64,
+    ret_ty: u64,
+}
+struct S_TraitDecl {
+    name: u64,
+    supertraits: u64,
+    methods: u64,
+}
+struct S_Field {
+    name: u64,
+    ty: u64,
+}
+struct S_FuncDecl {
+    name: u64,
+    is_pub: bool,
+    is_extern: bool,
+    abi: u64,
+    no_mangle: bool,
+    is_decl_only: bool,
+    generics: u64,
+    params: u64,
+    ret_ty: u64,
+    body: u64,
+    is_inline: bool,
+    is_async: bool,
+    is_arena: bool,
+    operator: u64,
+    is_variadic: bool,
+    ret_fallible_sugar: bool,
+    ret_borrow_origin: u64,
+}
+struct S_Param {
+    name: u64,
+    ty: u64,
+    is_borrow: bool,
+    is_move: bool,
+    is_fallible_sugar: bool,
+}
+struct S_MacroDecl {
+    name: u64,
+    params: u64,
+    body: u64,
+    param_types: u64,
+}
+struct S_ImportDecl {
+    path: u64,
+}
+struct S_UsingDecl {
+    path: u64,
+}
+struct S_SublanguageRegistration {
+    kind: u64,
+}
+struct S_SublanguageDecl {
+    kind: u64,
+    name: u64,
+    payload: u64,
+}
+struct S_ShaderDecl {
+    name: u64,
+    priority: u64,
+    globals: u64,
+    inputs: u64,
+    params: u64,
+    consts: u64,
+    vars: u64,
+    init: u64,
+    vertex: u64,
+    fragment: u64,
+}
+struct S_ShaderGlobalGroup {
+    name: u64,
+    fields: u64,
+}
+struct S_ShaderField {
+    name: u64,
+    ty: u64,
+}
+struct S_ShaderConst {
+    name: u64,
+    ty: u64,
+    value: u64,
+}
+struct S_ShaderAssign {
+    target: u64,
+    value: u64,
+}
+struct S_ShaderIf {
+    cond: u64,
+    body: u64,
+}
+struct S_ShaderMemberAccess {
+    base: u64,
+    field: u64,
+}
+struct S_ShaderBinary {
+    op: u64,
+    lhs: u64,
+    rhs: u64,
+}
+struct S_ShaderUnary {
+    op: u64,
+    expr: u64,
+}
+struct S_ShaderConstruct {
+    ty: u64,
+    args: u64,
+}
+struct S_ShaderSample {
+    tex: u64,
+    uv: u64,
+}
+struct S_ShaderCall {
+    name: u64,
+    args: u64,
+}
+struct S_CheckHookDecl {
+    name: u64,
+}
+struct S_TestDecl {
+    name: u64,
+    is_ignored: bool,
+    should_panic: bool,
+    body: u64,
+}
+struct S_LetStmt {
+    name: u64,
+    ty: u64,
+    value: u64,
+}
+struct S_LetElseStmt {
+    pattern: u64,
+    value: u64,
+    else_block: u64,
+}
+struct S_LetDestructureStmt {
+    names: u64,
+    value: u64,
+    rest_name: u64,
+    rest_alias: u64,
+    is_slice: bool,
+}
+struct S_ConstStmt {
+    name: u64,
+    ty: u64,
+    value: u64,
+}
+struct S_VarStmt {
+    name: u64,
+    ty: u64,
+}
+struct S_AssignStmt {
+    target: u64,
+    value: u64,
+}
+struct S_BlockStmt {
+    body: u64,
+}
+struct S_ArenaStmt {
+    body: u64,
+}
+struct S_ReturnStmt {
+    value: u64,
+}
+struct S_ForStmt {
+    var_name: u64,
+    start: u64,
+    end: u64,
+    body: u64,
+}
+struct S_WhileStmt {
+    cond: u64,
+    let_pattern: u64,
+    body: u64,
+}
+struct S_BreakStmt {
+}
+struct S_ContinueStmt {
+}
+struct S_ReleaseStmt {
+    var_name: u64,
+}
+struct S_GoExpr {
+    supervised: bool,
+    call: u64,
+}
+struct S_DeferStmt {
+    call: u64,
+}
+struct S_SelectCase {
+    call: u64,
+    bind_name: u64,
+    bind_closed: u64,
+    body: u64,
+}
+struct S_SelectStmt {
+    cases: u64,
+    default_body: u64,
+    timeout_expr: u64,
+    timeout_body: u64,
+}
+struct S_IfExpr {
+    cond: u64,
+    let_chain: u64,
+    then_block: u64,
+    else_block: u64,
+}
+struct S_IfLetCond {
+    pattern: u64,
+    value: u64,
+}
+struct S_Case {
+    body: u64,
+}
+struct S_SwitchExpr {
+    val: u64,
+    cases: u64,
+}
+struct S_MatchExpr {
+    val: u64,
+    cases: u64,
+}
+struct S_UnsafeExpr {
+    body: u64,
+}
+struct S_MatchCase {
+    pattern: u64,
+    guard: u64,
+    body: u64,
+}
+struct S_AwaitExpr {
+    expr: u64,
+}
+struct S_InlineAsmOperand {
+    constraint: u64,
+    var_name: u64,
+}
+struct S_InlineAsmExpr {
+    template: u64,
+    operands: u64,
+}
+struct S_ClosureLiteral {
+    params: u64,
+    body: u64,
+}
+struct S_EnumPattern {
+    enum_name: u64,
+    variant_name: u64,
+    bindings: u64,
+}
+struct S_BinaryExpr {
+    op: u64,
+    left: u64,
+    right: u64,
+}
+struct S_CallExpr {
+    func_name: u64,
+    associated_target: u64,
+    generics: u64,
+    args: u64,
+    callee: u64,
+}
+struct S_GenericFuncRef {
+    func_name: u64,
+    generics: u64,
+}
+struct S_BorrowExpr {
+    expr: u64,
+}
+struct S_MoveExpr {
+    expr: u64,
+}
+struct S_DerefExpr {
+    expr: u64,
+}
+struct S_CastExpr {
+    expr: u64,
+    ty: u64,
+}
+struct S_FieldExpr {
+    expr: u64,
+    field_name: u64,
+}
+struct S_StructLiteralField {
+    name: u64,
+    value: u64,
+}
+struct S_StructLiteral {
+    ty: u64,
+    fields: u64,
+    update_expr: u64,
+}
+struct S_EnumLiteralField {
+    name: u64,
+    value: u64,
+}
+struct S_EnumLiteral {
+    enum_name: u64,
+    variant_name: u64,
+    fields: u64,
+}
+struct S_TupleLiteral {
+    elements: u64,
+}
+struct S_ArrayLiteral {
+    elements: u64,
+}
+struct S_RepeatArrayLiteral {
+    value: u64,
+    len: usize,
+}
+struct S_IndexExpr {
+    target: u64,
+    index: u64,
+}
+struct S_SliceExpr {
+    target: u64,
+    start: u64,
+    end: u64,
+}
+struct S_TryExpr {
+    expr: u64,
+}
+struct S_UserDefined {
+    name: u64,
+    generics: u64,
+}
+struct S_ArrayType {
+    elem: u64,
+    len: usize,
+}
+struct S_TupleType {
+    elems: u64,
+}
+struct S_ClosureType {
+    params: u64,
+    ret: u64,
+}
+struct S_FnPtrType {
+    abi: u64,
+    params: u64,
+    ret: u64,
+    is_variadic: bool,
+}
+
 // ---- 常用 payload struct（按 Zig ast.zig 同名字段化简）----
 
 // FuncDecl 的核心字段（ast.zig:FuncDecl）。递归引用用节点 id（arena 索引）。

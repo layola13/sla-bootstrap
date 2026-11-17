@@ -141,6 +141,52 @@ fn type_binary(op: i32, lhs: i32, rhs: i32) -> TypeResult {
     return TypeResult{ diag: DIAG_TYPE_MISMATCH, ty: TY_UNKNOWN };
 }
 
+// ---- 调用参数 ABI 能力（对齐 lowering_rules.abiCallArgCapKind）----
+// CAP_BY_VALUE / CAP_BORROW / CAP_MOVE（对齐 inst.CapPrefix）。
+const CAP_BY_VALUE: i32 = 0;
+const CAP_BORROW: i32 = 1;
+const CAP_MOVE: i32 = 2;
+const CAP_RAW: i32 = 3;
+
+// is_borrow 优先于 is_move（对齐 Zig abiCallArgCapKind 的优先级）。
+fn abi_call_arg_cap(is_borrow: bool, is_move: bool) -> i32 {
+    if is_borrow {
+        return CAP_BORROW;
+    };
+    if is_move {
+        return CAP_MOVE;
+    };
+    return CAP_BY_VALUE;
+}
+
+// 借用释放：Locked_Read -> Active，Locked_Mut 需先解独占；
+// 引用计数用 u16（对齐 verifier locks[] 的计数语义，简化为单持有者）。
+fn op_release_borrow(s: u16) -> MoveResult {
+    if s == ST_LOCKED_READ || s == ST_LOCKED_MUT {
+        return MoveResult{ diag: DIAG_OK, state: ST_ACTIVE };
+    };
+    return MoveResult{ diag: DIAG_BORROW_CONFLICT, state: s };
+}
+
+@test "checker: call arg ABI caps"() {
+    let c1 = abi_call_arg_cap(true, false);
+    if c1 != CAP_BORROW {
+        panic(11);
+    };
+    let c2 = abi_call_arg_cap(false, true);
+    if c2 != CAP_MOVE {
+        panic(12);
+    };
+    let c3 = abi_call_arg_cap(false, false);
+    if c3 != CAP_BY_VALUE {
+        panic(13);
+    };
+    let rel = op_release_borrow(ST_LOCKED_READ);
+    if rel.diag != DIAG_OK || rel.state != ST_ACTIVE {
+        panic(14);
+    };
+}
+
 @test "checker: expression types"() {
     let ti = type_of_literal(0);
     if ti != TY_INT {
