@@ -1,0 +1,77 @@
+// sla-lowering / 共享纯决策函数（阶段 5 起点）
+//
+// 对应 Zig: sa_plugin_sla/src/lowering_rules.zig 的纯函数（无 AST 指针依赖）。
+// 这些规则是 Y 型架构的「共享 lowering 主干」，两个 codegen 共用，
+// 因此是移植价值最高的部分：纯逻辑、无副作用、可逐函数对拍。
+// 首批移植：isTemporaryRegisterName / abiCallArgCapKind /
+// moveExprConsumesSource / isExcludedAggregateHomeName / stmtTerminates。
+
+// ---- isTemporaryRegisterName（lowering_rules.zig:1262）----
+fn is_temporary_register_name(name: String) -> bool {
+    return str_starts(name, "tmp_");
+}
+
+// ---- abiCallArgCapKind（lowering_rules.zig:1267）----
+const CAP_NONE: i32 = 0;
+const CAP_BORROW: i32 = 1;
+const CAP_MOVE: i32 = 2;
+fn abi_call_arg_cap_kind(is_borrow: bool, is_move: bool) -> i32 {
+    if is_borrow { return CAP_BORROW; };
+    if is_move { return CAP_MOVE; };
+    return CAP_NONE;
+}
+
+// ---- moveExprConsumesSource（lowering_rules.zig:1333）----
+// inner_ty_is_null 表示 optional 无值 -> true；value_is_copy/borrow_like 决定不消费。
+fn move_expr_consumes_source(ty_is_null: bool, value_is_copy: bool, borrow_like: bool) -> bool {
+    if ty_is_null { return true; };
+    if value_is_copy { return false; };
+    if borrow_like { return false; };
+    return true;
+}
+
+// ---- isExcludedAggregateHomeName（lowering_rules.zig:1361）----
+fn is_excluded_aggregate_home_name(name: String) -> bool {
+    if str_eq(name, "String") { return true; };
+    if str_eq(name, "Vec") { return true; };
+    if str_eq(name, "GrowVec") { return true; };
+    if str_eq(name, "VecDeque") { return true; };
+    if str_eq(name, "HashMap") { return true; };
+    if str_eq(name, "HashSet") { return true; };
+    if str_eq(name, "BTreeMap") { return true; };
+    if str_eq(name, "BTreeSet") { return true; };
+    if str_eq(name, "Cell") { return true; };
+    if str_eq(name, "RefCell") { return true; };
+    if str_eq(name, "AtomicI32") { return true; };
+    if str_eq(name, "AtomicUsize") { return true; };
+    if str_eq(name, "AtomicPtr") { return true; };
+    if str_eq(name, "AtomicBool") { return true; };
+    if str_eq(name, "ManuallyDrop") { return true; };
+    if str_eq(name, "Chan") { return true; };
+    if str_eq(name, "Sender") { return true; };
+    if str_eq(name, "Receiver") { return true; };
+    if str_eq(name, "Mutex") { return true; };
+    if str_eq(name, "RwLock") { return true; };
+    return false;
+}
+
+@test "lowering: temporary register names"() {
+    if !is_temporary_register_name("tmp_1") { panic(1); };
+    if is_temporary_register_name("foo") { panic(2); };
+}
+@test "lowering: call arg caps"() {
+    if abi_call_arg_cap_kind(true, false) != CAP_BORROW { panic(3); };
+    if abi_call_arg_cap_kind(false, true) != CAP_MOVE { panic(4); };
+    if abi_call_arg_cap_kind(false, false) != CAP_NONE { panic(5); };
+}
+@test "lowering: move consumes"() {
+    if !move_expr_consumes_source(true, false, false) { panic(6); };
+    if move_expr_consumes_source(false, true, false) { panic(7); };
+    if move_expr_consumes_source(false, false, true) { panic(8); };
+    if !move_expr_consumes_source(false, false, false) { panic(9); };
+}
+@test "lowering: excluded aggregate names"() {
+    if !is_excluded_aggregate_home_name("Vec") { panic(10); };
+    if !is_excluded_aggregate_home_name("RwLock") { panic(11); };
+    if is_excluded_aggregate_home_name("MyStruct") { panic(12); };
+}
