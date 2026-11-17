@@ -53,4 +53,21 @@ def compare(name, a, b, norm):
 
 r1=compare('lexer.Tag', zig_lexer_tags(PLUG+'/lexer.zig'), sla_tags(BASE+'/sla-lexer/src/token.sla','TAG_'), norm_lexer)
 r2=compare('ast.Node', zig_ast_node_tags(PLUG+'/ast.zig'), sla_tags(BASE+'/sla-ast/src/ast.sla','NODE_'), norm_ast)
-sys.exit(0 if (r1 and r2) else 1)
+
+# 关键字表 1:1（Zig checkKeyword ↔ SLA KW_* 常量）
+def zig_keywords(path):
+    s=open(path,encoding='utf-8').read()
+    return set(m.group(1) for m in re.finditer(r'eql\(u8, str, "([a-z_]+)"\)\)',s))
+def sla_keywords(path):
+    s=open(path,encoding='utf-8').read()
+    words=set()
+    for m in re.finditer(r'const KW_[A-Z_]+: u64 = (\d+);',s):
+        v=int(m.group(1))
+        words.add(bytes((v>>(8*i))&0xff for i in range(8)).rstrip(b'\x00').decode())
+    return words
+zk=zig_keywords(PLUG+'/lexer.zig'); sk=sla_keywords(BASE+'/sla-lexer/src/lexer.sla')
+r3 = zk==sk
+print(f"[{'PASS' if r3 else 'FAIL'}] lexer keywords: zig={len(zk)} sla={len(sk)}")
+if not r3:
+    print("  missing:",sorted(zk-sk),"extra:",sorted(sk-zk))
+sys.exit(0 if (r1 and r2 and r3) else 1)
