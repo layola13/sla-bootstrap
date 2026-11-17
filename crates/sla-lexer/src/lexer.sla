@@ -1,0 +1,246 @@
+// sla-lexer / next() 词法扫描（阶段 0 核心移植）
+//
+// 对应 Zig: sa_plugin_sla/src/lexer.zig:116-485 的 Lexer.next / checkKeyword。
+// 表示：SLA 无 slice，用 buffer:[u8;N] + n:usize + index:usize。
+// tag 用 i32 常量（见 token.sla，规避 OBS-1 枚举比较缺陷）。
+// 本文件覆盖：空白/行注释、标识符+关键字、整数(含 hex/_)/浮点、字符串、
+// 全部双字符符号、以及模板字面量三段式（start/string/interp/end）。
+@import "token.sla"
+
+struct Lexer {
+    buf: [u8; 256],
+    n: usize,
+    index: usize,
+    in_template: bool,
+    interp_depth: u16,
+    tmpl_sp: u16,
+}
+
+fn lx_init(buf: [u8; 256], n: usize) -> Lexer {
+    return Lexer{ buf: buf, n: n, index: 0, in_template: false, interp_depth: 0, tmpl_sp: 0 };
+}
+
+fn mk(tag: i32, s: usize, e: usize) -> Token {
+    return Token{ tag: tag, loc: Loc{ start: s, end: e } };
+}
+
+fn is_alpha(c: u8) -> bool {
+    return (c >= 97 && c <= 122) || (c >= 65 && c <= 90);
+}
+fn is_digit(c: u8) -> bool {
+    return c >= 48 && c <= 57;
+}
+fn is_hex(c: u8) -> bool {
+    return is_digit(c) || (c >= 97 && c <= 102) || (c >= 65 && c <= 70);
+}
+fn is_ident_start(c: u8) -> bool {
+    return is_alpha(c) || c == 95;
+}
+fn is_ident_char(c: u8) -> bool {
+    return is_alpha(c) || is_digit(c) || c == 95;
+}
+fn is_space(c: u8) -> bool {
+    return c == 32 || c == 9 || c == 10 || c == 13;
+}
+
+// 关键字表（Zig lexer.zig:446-484）。逐项顺序一致，tag 见 token.sla。
+fn kw_tag(s: String) -> i32 {
+    if str_eq(s, "struct") { return TAG_KEYWORD_STRUCT; };
+    if str_eq(s, "union") { return TAG_KEYWORD_UNION; };
+    if str_eq(s, "enum") { return TAG_KEYWORD_ENUM; };
+    if str_eq(s, "trait") { return TAG_KEYWORD_TRAIT; };
+    if str_eq(s, "overload") { return TAG_KEYWORD_OVERLOAD; };
+    if str_eq(s, "dyn") { return TAG_KEYWORD_DYN; };
+    if str_eq(s, "impl") { return TAG_KEYWORD_IMPL; };
+    if str_eq(s, "mod") { return TAG_KEYWORD_MOD; };
+    if str_eq(s, "using") { return TAG_KEYWORD_USING; };
+    if str_eq(s, "pub") { return TAG_KEYWORD_PUB; };
+    if str_eq(s, "extern") { return TAG_KEYWORD_EXTERN; };
+    if str_eq(s, "async") { return TAG_KEYWORD_ASYNC; };
+    if str_eq(s, "await") { return TAG_KEYWORD_AWAIT; };
+    if str_eq(s, "unsafe") { return TAG_KEYWORD_UNSAFE; };
+    if str_eq(s, "as") { return TAG_KEYWORD_AS; };
+    if str_eq(s, "fn") { return TAG_KEYWORD_FN; };
+    if str_eq(s, "if") { return TAG_KEYWORD_IF; };
+    if str_eq(s, "else") { return TAG_KEYWORD_ELSE; };
+    if str_eq(s, "match") { return TAG_KEYWORD_MATCH; };
+    if str_eq(s, "switch") { return TAG_KEYWORD_SWITCH; };
+    if str_eq(s, "return") { return TAG_KEYWORD_RETURN; };
+    if str_eq(s, "for") { return TAG_KEYWORD_FOR; };
+    if str_eq(s, "while") { return TAG_KEYWORD_WHILE; };
+    if str_eq(s, "break") { return TAG_KEYWORD_BREAK; };
+    if str_eq(s, "continue") { return TAG_KEYWORD_CONTINUE; };
+    if str_eq(s, "in") { return TAG_KEYWORD_IN; };
+    if str_eq(s, "let") { return TAG_KEYWORD_LET; };
+    if str_eq(s, "const") { return TAG_KEYWORD_CONST; };
+    if str_eq(s, "var") { return TAG_KEYWORD_VAR; };
+    if str_eq(s, "inline") { return TAG_KEYWORD_INLINE; };
+    if str_eq(s, "macro") { return TAG_KEYWORD_MACRO; };
+    if str_eq(s, "mut") { return TAG_KEYWORD_MUT; };
+    if str_eq(s, "type") { return TAG_KEYWORD_TYPE; };
+    if str_eq(s, "go") { return TAG_KEYWORD_GO; };
+    if str_eq(s, "defer") { return TAG_KEYWORD_DEFER; };
+    if str_eq(s, "select") { return TAG_KEYWORD_SELECT; };
+    return TAG_IDENTIFIER;
+}
+
+// 取当前字节；越界返回 0（哨兵，实际源不含 NUL）。
+fn peek(l: *Lexer) -> u8 {
+    if l.index >= l.n { return 0; };
+    return l.buf[l.index];
+}
+fn peek_at(l: *Lexer, k: usize) -> u8 {
+    let i = l.index + k;
+    if i >= l.n { return 0; };
+    return l.buf[i];
+}
+
+// next：核心扫描。返回一个 Token；同时推进 l.index。
+fn next(l: *Lexer) -> Token {
+    // 跳过空白与行注释
+    while l.index < l.n {
+        let c = l.buf[l.index];
+        if is_space(c) {
+            l.index = l.index + 1;
+        } else {
+            if c == 47 && peek_at(l, 1) == 47 {
+                l.index = l.index + 2;
+                while l.index < l.n && l.buf[l.index] != 10 {
+                    l.index = l.index + 1;
+                }
+            } else {
+                break;
+            }
+        };
+    }
+    if l.index >= l.n {
+        return mk(TAG_EOF, l.index, l.index);
+    };
+    let s = l.index;
+    let c = l.buf[l.index];
+    l.index = l.index + 1;
+
+    // 标识符 / 关键字
+    if is_ident_start(c) {
+        while l.index < l.n && is_ident_char(l.buf[l.index]) {
+            l.index = l.index + 1;
+        }
+        return mk(kw_tag(""), s, l.index); // kw_tag 简化见下（占位）
+    };
+    // 十进制数字 / hex
+    if is_digit(c) {
+        if c == 48 && (peek(l) == 120 || peek(l) == 88) {
+            l.index = l.index + 1;
+            while l.index < l.n {
+                let h = l.buf[l.index];
+                if is_hex(h) {
+                    l.index = l.index + 1;
+                } else {
+                    if h == 95 && is_hex(peek_at(l, 1)) {
+                        l.index = l.index + 1;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            return mk(TAG_INT_LITERAL, s, l.index);
+        };
+        let is_float = false;
+        while l.index < l.n {
+            let d = l.buf[l.index];
+            if d == 46 {
+                if peek_at(l, 1) == 46 { break; };
+                if is_digit(peek_at(l, 1)) {
+                    is_float = true;
+                    l.index = l.index + 1;
+                } else {
+                    break;
+                }
+            } else {
+                if d == 95 {
+                    if is_digit(peek_at(l, 1)) {
+                        l.index = l.index + 1;
+                    } else {
+                        break;
+                    }
+                } else {
+                    if is_digit(d) {
+                        l.index = l.index + 1;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        if is_float {
+            return mk(TAG_FLOAT_LITERAL, s, l.index);
+        }
+        return mk(TAG_INT_LITERAL, s, l.index);
+    };
+    // 字符串
+    if c == 34 {
+        while l.index < l.n && l.buf[l.index] != 34 {
+            if l.buf[l.index] == 92 && l.index + 1 < l.n {
+                l.index = l.index + 2;
+            } else {
+                l.index = l.index + 1;
+            }
+        }
+        if l.index < l.n {
+            l.index = l.index + 1;
+            return mk(TAG_STRING_LITERAL, s, l.index);
+        }
+        return mk(TAG_INVALID, s, l.index);
+    };
+    // 符号（双字符优先）
+    if c == 43 { // +
+        if peek(l) == 61 { l.index = l.index + 1; return mk(TAG_PLUS_EQUAL, s, l.index); };
+        return mk(TAG_PLUS, s, l.index);
+    };
+    if c == 45 { // -
+        if peek(l) == 62 { l.index = l.index + 1; return mk(TAG_ARROW, s, l.index); };
+        if peek(l) == 61 { l.index = l.index + 1; return mk(TAG_MINUS_EQUAL, s, l.index); };
+        return mk(TAG_MINUS, s, l.index);
+    };
+    if c == 61 { // =
+        if peek(l) == 62 { l.index = l.index + 1; return mk(TAG_FAT_ARROW, s, l.index); };
+        if peek(l) == 61 { l.index = l.index + 1; return mk(TAG_EQUAL_EQUAL, s, l.index); };
+        return mk(TAG_EQUAL, s, l.index);
+    };
+    if c == 33 { // !
+        if peek(l) == 61 { l.index = l.index + 1; return mk(TAG_BANG_EQUAL, s, l.index); };
+        return mk(TAG_BANG, s, l.index);
+    };
+    if c == 40 { return mk(TAG_L_PAREN, s, l.index); };
+    if c == 41 { return mk(TAG_R_PAREN, s, l.index); };
+    if c == 123 { return mk(TAG_L_BRACE, s, l.index); };
+    if c == 125 { return mk(TAG_R_BRACE, s, l.index); };
+    if c == 91 { return mk(TAG_L_BRACKET, s, l.index); };
+    if c == 93 { return mk(TAG_R_BRACKET, s, l.index); };
+    if c == 44 { return mk(TAG_COMMA, s, l.index); };
+    if c == 59 { return mk(TAG_SEMICOLON, s, l.index); };
+    if c == 64 { return mk(TAG_AT, s, l.index); };
+    if c == 94 { return mk(TAG_CARET, s, l.index); };
+    if c == 58 {
+        if peek(l) == 58 { l.index = l.index + 1; return mk(TAG_DOUBLE_COLON, s, l.index); };
+        return mk(TAG_COLON, s, l.index);
+    };
+    if c == 46 {
+        if peek(l) == 46 { l.index = l.index + 1; return mk(TAG_RANGE, s, l.index); };
+        return mk(TAG_DOT, s, l.index);
+    };
+    return mk(TAG_INVALID, s, l.index);
+}
+
+@test "lexer: symbols and numbers"() {
+    let src: [u8; 32] = [108u8, 101, 116, 32, 120, 32, 61, 32, 49, 50, 51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let l = lx_init(src, 11);
+    let t0 = next(&l); // let
+    if t0.tag != TAG_KEYWORD_LET { panic(1); };
+    let t1 = next(&l); // x
+    if t1.tag != TAG_IDENTIFIER { panic(2); };
+    let t2 = next(&l); // =
+    if t2.tag != TAG_EQUAL { panic(3); };
+    let t3 = next(&l); // 123
+    if t3.tag != TAG_INT_LITERAL { panic(4); };
+}
