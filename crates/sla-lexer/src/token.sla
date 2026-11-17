@@ -120,3 +120,8 @@ struct Token {
     tag: i32,
     loc: Loc,
 }
+
+// 构造辅助（供 import 方使用；在本文件内 Token/Loc 是本单元定义的 struct）。
+fn make_token(tag: i32, s: usize, e: usize) -> Token {
+    return Token{ tag: tag, loc: Loc{ start: s, end: e } };
+}

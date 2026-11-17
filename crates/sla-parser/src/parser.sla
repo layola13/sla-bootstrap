@@ -1,0 +1,89 @@
+// sla-parser / Pratt 表达式解析核心（阶段 3 起点）
+//
+// 对应 Zig: sa_plugin_sla/src/parser.zig:2976 parseExpr 的 Pratt 循环。
+// 参考: layola13/sla/crates/sla-parser/src（Rust 递归下降/Pratt 镜像）。
+// 依赖: sla-lexer（token.sla / lexer.sla）、sla-ast（ast.sla）。
+//
+// 这里落 Pratt 核心：binding power + prefix/infix，构造 ast.Node（
+// 通用槽），并附一个「解析并求值」的测试证明优先级正确。
+// 完整 parseProgram/parseDecl/parseType 按阶段 3 后续推进。
+@import "crates/sla-lexer/src/token.sla"
+@import "crates/sla-ast/src/ast.sla"
+
+// Tag 常量复用 token.sla 的 TAG_*（已 import）。
+
+// binding power（对齐 Zig parseExpr precedence 表，简化数值）。
+fn lbp(tag: i32) -> u8 {
+    if tag == TAG_PLUS { return 10; };
+    if tag == TAG_MINUS { return 10; };
+    if tag == TAG_ASTERISK { return 20; };
+    if tag == TAG_SLASH { return 20; };
+    return 0;
+}
+
+// 解析结果：节点 tag + 数值载荷（用于测试验证优先级）。
+struct ParseResult {
+    node: Node,
+    value: i64,
+    consumed: usize,
+}
+
+// 从 token 流解析一个表达式（Pratt）。toks 是 token 数组，pos 是起始下标。
+// 这里返回求值结果 + 消耗的 token 数；完整 AST 构造在阶段 3 补全。
+fn parse_expr(toks: &[Token; 32], pos: usize, min_bp: u8) -> ParseResult {
+    // prefix：整数字面量
+    let t = toks[pos];
+    if t.tag != TAG_INT_LITERAL {
+        return ParseResult{ node: make_node(TAG_INVALID, 0, 0), value: 0, consumed: 0 };
+    };
+    // 从 span 取数值（简化：用 span.end-span.start 占位，真实解析在阶段 3）
+    let left: i64 = (t.loc.end - t.loc.start) as i64;
+    let idx = pos + 1;
+    while idx < 32 {
+        let op = toks[idx];
+        let bp = lbp(op.tag);
+        if bp <= min_bp || bp == 0 {
+            break;
+        };
+        let rhs = parse_expr(toks, idx + 1, bp);
+        if op.tag == TAG_PLUS {
+            left = left + rhs.value;
+        } else {
+            if op.tag == TAG_MINUS {
+                left = left - rhs.value;
+            } else {
+                if op.tag == TAG_ASTERISK {
+                    left = left * rhs.value;
+                } else {
+                    left = left / rhs.value;
+                }
+            }
+        };
+        idx = idx + 1 + rhs.consumed;
+    }
+    return ParseResult{ node: make_node(TAG_INT_LITERAL, 0, 0), value: left, consumed: idx - pos };
+}
+
+@test "parser: pratt precedence"() {
+    // "1 + 2 * 3" 的 token 流；用 span 宽度编码操作数：1→宽1, 2→宽2, 3→宽3。
+    // 期望 1 + 2*3 = 1 + 6 = 7（若优先级错为 (1+2)*3 = 9）。
+    let toks: [Token; 32] = [
+        make_token(TAG_INT_LITERAL, 0, 1),  // 1
+        make_token(TAG_PLUS, 1, 2),
+        make_token(TAG_INT_LITERAL, 2, 4),  // 2 (width 2)
+        make_token(TAG_ASTERISK, 4, 5),
+        make_token(TAG_INT_LITERAL, 5, 8),  // 3 (width 3)
+        make_token(TAG_EOF, 8, 8),
+        make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0),
+        make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0),
+        make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0),
+        make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0),
+        make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0),
+        make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0),
+        make_token(TAG_EOF, 0, 0), make_token(TAG_EOF, 0, 0)
+    ];
+    let r = parse_expr(&toks, 0, 0);
+    if r.value != 7 {
+        panic(1);
+    };
+}
