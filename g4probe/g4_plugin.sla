@@ -7,7 +7,7 @@
 @import "sa_std/string.sa"
 @import "sa_std/core/mem.sa"
 
-extern "C" fn saasm_plugin_descriptor_v1_fn(out: ptr) {
+fn saasm_plugin_descriptor_v1_fn(out: ptr) {
     // +0/+4 一次写 64 位：低32=abi_version(1)，高32=descriptor_size(64)
     PTR_WRITE_U64(out, 1 + (64 << 32));
     // +8 name -> "g4probe"（SA 字符串字面量 NUL 结尾）

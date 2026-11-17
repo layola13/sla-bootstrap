@@ -15,10 +15,10 @@
     call @sa_mem_set(&%array_ptr, %value, %length)
 [END_MACRO]
 @import "sa_std/mem.sa"
-@const SLA_FNPTR_VT_saasm_plugin_descriptor_v1_fn = vtable { call = @saasm_plugin_descriptor_v1_fn }
-@const SLA_FNPTR_VT_g4_plugin__saasm_plugin_descriptor_v1_fn = vtable { call = @g4_plugin__saasm_plugin_descriptor_v1_fn }
+@const SLA_FNPTR_VT_saasm_plugin_descriptor_v1_fn = vtable { call = @sla__saasm_plugin_descriptor_v1_fn }
+@const SLA_FNPTR_VT_g4_plugin__saasm_plugin_descriptor_v1_fn = vtable { call = @sla__g4_plugin__saasm_plugin_descriptor_v1_fn }
 @const SLA_FNPTR_VT_sa_lib_fwd_saasm_plugin_descriptor_v1_fn = vtable { call = @sa_lib_fwd_saasm_plugin_descriptor_v1_fn }
-@saasm_plugin_descriptor_v1_fn(out: ptr):
+@sla__saasm_plugin_descriptor_v1_fn(out: ptr):
 L_ENTRY:
     tmp_0 = out
     out = stack_alloc 8
@@ -166,7 +166,7 @@ L_ENTRY:
     !tmp_51
     return
 
-@g4_plugin__saasm_plugin_descriptor_v1_fn(out: ptr):
+@sla__g4_plugin__saasm_plugin_descriptor_v1_fn(out: ptr):
 L_ENTRY:
     tmp_52 = out
     out = stack_alloc 8
@@ -316,7 +316,7 @@ L_ENTRY:
 
 @sa_lib_fwd_saasm_plugin_descriptor_v1_fn(out: ptr):
 L_ENTRY:
-    call @saasm_plugin_descriptor_v1_fn(out)
+    call @sla__saasm_plugin_descriptor_v1_fn(out)
     !out
     return
 
