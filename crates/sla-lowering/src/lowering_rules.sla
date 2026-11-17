@@ -75,6 +75,30 @@ fn supports_scalar_match_guard(guard_is_scalar: bool) -> bool {
     return guard_is_scalar;
 }
 
+// ---- abiParamNeedsBorrowArg（lowering_rules.zig:1287）----
+// ty_is_borrow 由调用方给出（真实实现检查 ty.* == .borrow）。
+fn abi_param_needs_borrow_arg(is_borrow: bool, ty_is_borrow: bool) -> bool {
+    return is_borrow || ty_is_borrow;
+}
+
+// ---- isHeapHandleType（lowering_rules.zig:1347）----
+// ty_class: 0=user_defined, 1=tuple, 2=array, 3=其他（scalar/ptr/borrow...）。
+fn is_heap_handle_type(ty_class: i32) -> bool {
+    if ty_class == 0 { return true; };
+    if ty_class == 1 { return true; };
+    if ty_class == 2 { return true; };
+    return false;
+}
+
+@test "lowering: abi borrow arg and heap handle"() {
+    if !abi_param_needs_borrow_arg(true, false) { panic(30); };
+    if !abi_param_needs_borrow_arg(false, true) { panic(31); };
+    if abi_param_needs_borrow_arg(false, false) { panic(32); };
+    if !is_heap_handle_type(0) { panic(33); };
+    if !is_heap_handle_type(2) { panic(34); };
+    if is_heap_handle_type(3) { panic(35); };
+}
+
 @test "lowering: address exposure macros"() {
     if !is_address_exposure_macro("PTR_ADDR") { panic(20); };
     if !is_address_exposure_macro("PTR_EXPOSE_PROVENANCE") { panic(21); };
