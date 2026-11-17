@@ -1,0 +1,46 @@
+{
+  "schema": "sa.plugin/1",
+  "name": "g4probe",
+  "version": "0.1.0",
+  "source": {
+    "type": "local",
+    "path": "."
+  },
+  "abi": {
+    "plugin": 1,
+    "saasm": ">=0.4.0"
+  },
+  "artifacts": {
+    "linux-x86_64": {
+      "path": "plugin-lib.so"
+    }
+  },
+  "interfaces": {},
+  "skills": [],
+  "permissions": {
+    "fs": [],
+    "net": [
+      {
+        "url": "http://localhost",
+        "methods": [
+          "GET",
+          "POST"
+        ]
+      },
+      {
+        "url": "https://",
+        "methods": [
+          "GET",
+          "POST"
+        ]
+      }
+    ],
+    "env": [],
+    "process": {
+      "spawn": false,
+      "exec": []
+    }
+  },
+  "kind": "language",
+  "language_extensions": []
+}
