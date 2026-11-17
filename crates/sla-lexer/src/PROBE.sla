@@ -14,8 +14,8 @@ enum TokenTag {
 }
 
 struct Loc {
-    start: u64,
-    end: u64,
+    start: usize,
+    end: usize,
 }
 
 struct Token {
@@ -24,72 +24,71 @@ struct Token {
 }
 
 fn is_ident_start(c: u8) -> bool {
-    return (c >= 97 and c <= 122) or (c >= 65 and c <= 90) or c == 95;
+    return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95;
 }
 
 fn is_digit(c: u8) -> bool {
-    return c >= 48 and c <= 57;
+    return c >= 48 && c <= 57;
 }
 
 // 最小 next：只识别 + - ( ) 整数 标识符，其余 invalid；到尾 eof。
-fn next(buf: []const u8, index: u64) -> Token {
-    const n = buf.len;
-    var i = index;
-    // 跳过空白
-    while (i < n) {
-        const c = buf[i];
-        if (c == 32 or c == 9 or c == 10 or c == 13) {
+fn next(buf: String, index: usize) -> Token {
+    let n = buf.len();
+    let i = index;
+    while i < n {
+        let c = buf[i];
+        if c == 32 || c == 9 || c == 10 || c == 13 {
             i = i + 1;
         } else {
             break;
-        }
+        };
     }
-    if (i >= n) {
-        return Token{ .tag = .Eof, .loc = Loc{ .start = i, .end = i } };
-    }
-    const start = i;
-    const c = buf[i];
+    if i >= n {
+        return Token{ tag: TokenTag::Eof, loc: Loc{ start: i, end: i } };
+    };
+    let start = i;
+    let c = buf[i];
     i = i + 1;
-    if (c == 43) {
-        return Token{ .tag = .Plus, .loc = Loc{ .start = start, .end = i } };
-    }
-    if (c == 45) {
-        return Token{ .tag = .Minus, .loc = Loc{ .start = start, .end = i } };
-    }
-    if (c == 40) {
-        return Token{ .tag = .LParen, .loc = Loc{ .start = start, .end = i } };
-    }
-    if (c == 41) {
-        return Token{ .tag = .RParen, .loc = Loc{ .start = start, .end = i } };
-    }
-    if (is_digit(c)) {
-        while (i < n and is_digit(buf[i])) {
+    if c == 43 {
+        return Token{ tag: TokenTag::Plus, loc: Loc{ start: start, end: i } };
+    };
+    if c == 45 {
+        return Token{ tag: TokenTag::Minus, loc: Loc{ start: start, end: i } };
+    };
+    if c == 40 {
+        return Token{ tag: TokenTag::LParen, loc: Loc{ start: start, end: i } };
+    };
+    if c == 41 {
+        return Token{ tag: TokenTag::RParen, loc: Loc{ start: start, end: i } };
+    };
+    if is_digit(c) {
+        while i < n && is_digit(buf[i]) {
             i = i + 1;
         }
-        return Token{ .tag = .IntLiteral, .loc = Loc{ .start = start, .end = i } };
-    }
-    if (is_ident_start(c)) {
-        while (i < n) {
-            const d = buf[i];
-            if (is_digit(d) or is_ident_start(d)) {
+        return Token{ tag: TokenTag::IntLiteral, loc: Loc{ start: start, end: i } };
+    };
+    if is_ident_start(c) {
+        while i < n {
+            let d = buf[i];
+            if is_digit(d) || is_ident_start(d) {
                 i = i + 1;
             } else {
                 break;
-            }
+            };
         }
-        return Token{ .tag = .Identifier, .loc = Loc{ .start = start, .end = i } };
-    }
-    return Token{ .tag = .Invalid, .loc = Loc{ .start = start, .end = i } };
+        return Token{ tag: TokenTag::Identifier, loc: Loc{ start: start, end: i } };
+    };
+    return Token{ tag: TokenTag::Invalid, loc: Loc{ start: start, end: i } };
 }
 
 @test "probe: lexer minimal slices"() {
-    const src = "a + 123";
-    const t0 = next(src, 0);
-    if (t0.tag != .Identifier) { panic(1); }
-    const t1 = next(src, t0.loc.end);
-    if (t1.tag != .Plus) { panic(2); }
-    const t2 = next(src, t1.loc.end);
-    if (t2.tag != .IntLiteral) { panic(3); }
-    const t3 = next(src, t2.loc.end);
-    if (t3.tag != .Eof) { panic(4); }
+    let src = "a + 123";
+    let t0 = next(src, 0);
+    if t0.tag != TokenTag::Identifier { panic(1); };
+    let t1 = next(src, t0.loc.end);
+    if t1.tag != TokenTag::Plus { panic(2); };
+    let t2 = next(src, t1.loc.end);
+    if t2.tag != TokenTag::IntLiteral { panic(3); };
+    let t3 = next(src, t2.loc.end);
+    if t3.tag != TokenTag::Eof { panic(4); };
 }
