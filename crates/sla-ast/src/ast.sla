@@ -1,0 +1,133 @@
+// sla-ast / 统一 AST Node 表示（阶段 1 起点）
+//
+// 对应 Zig: sa_plugin_sla/src/ast.zig 的 Node union + 各 payload struct。
+// 参考: layola13/sla/crates/sla-ast/src/node.rs（Rust 版 enum-with-payload 镜像）。
+//
+// 表示策略（阶段 0 探针 OBS-1 定形，见 crates/sla-lexer/STAGE0_PROBE.md）：
+//   Zig 的 `union(enum)` 用 struct { tag: i32, ...payload slots } 表达，
+//   不用 SLA enum 变体比较（实测 E::A==E::A 语义不可靠）。tag 常量用 i32，
+//   声明序对齐 Zig Node union（ast.zig:3-61）与 Rust Node enum（node.rs:14-83）。
+//   递归类型经 slot 中的整数 id 间接（arena 索引），不直接内嵌 Node——
+//   规避递归类型的深 drop 截断面（EXECUTION_PLAN G3 / DS2）。
+
+// ---- Node tag（i32 常量，声明序对齐 Zig Node union）----
+const NODE_PROGRAM: i32 = 0;
+const NODE_STRUCT_DECL: i32 = 1;
+const NODE_ENUM_DECL: i32 = 2;
+const NODE_TRAIT_DECL: i32 = 3;
+const NODE_IMPL_DECL: i32 = 4;
+const NODE_TYPE_ALIAS_DECL: i32 = 5;
+const NODE_OVERLOAD_DECL: i32 = 6;
+const NODE_FUNC_DECL: i32 = 7;
+const NODE_MACRO_DECL: i32 = 8;
+const NODE_IMPORT_DECL: i32 = 9;
+const NODE_USING_DECL: i32 = 10;
+const NODE_TEST_DECL: i32 = 11;
+const NODE_LET_STMT: i32 = 12;
+const NODE_CONST_STMT: i32 = 13;
+const NODE_ASSIGN_STMT: i32 = 14;
+const NODE_BLOCK_STMT: i32 = 15;
+const NODE_EXPR_STMT: i32 = 16;
+const NODE_RETURN_STMT: i32 = 17;
+const NODE_FOR_STMT: i32 = 18;
+const NODE_WHILE_STMT: i32 = 19;
+const NODE_DEFER_STMT: i32 = 20;
+const NODE_LITERAL: i32 = 21;
+const NODE_IDENTIFIER: i32 = 22;
+const NODE_BINARY_EXPR: i32 = 23;
+const NODE_CALL_EXPR: i32 = 24;
+const NODE_FIELD_EXPR: i32 = 25;
+const NODE_INDEX_EXPR: i32 = 26;
+const NODE_STRUCT_LITERAL: i32 = 27;
+const NODE_ARRAY_LITERAL: i32 = 28;
+const NODE_IF_EXPR: i32 = 29;
+const NODE_MATCH_EXPR: i32 = 30;
+
+// ---- Span（源码位置，对齐 Rust Loc / Zig 的 source_line 概念）----
+struct Span {
+    start: usize,
+    end: usize,
+}
+
+// ---- 常用 payload struct（按 Zig ast.zig 同名字段化简）----
+
+// FuncDecl 的核心字段（ast.zig:FuncDecl）。递归引用用节点 id（arena 索引）。
+struct FuncDecl {
+    name: String,
+    body: usize,
+    params: usize,
+    ret_ty: usize,
+}
+
+// StructDecl：字段列表 id + 名字。
+struct StructDecl {
+    name: String,
+    fields: usize,
+}
+
+// LetStmt：名字 + 初始化表达式节点 id + 可选类型 id。
+struct LetStmt {
+    name: String,
+    value: usize,
+    ty: usize,
+}
+
+// CallExpr：callee 名字 + 实参列表 id。
+struct CallExpr {
+    callee: String,
+    args: usize,
+}
+
+// BinaryExpr：op id + 左右操作数节点 id。
+struct BinaryExpr {
+    op: i32,
+    left: usize,
+    right: usize,
+}
+
+// 字面量的种类（i32 常量）与载荷。
+const LIT_INT: i32 = 0;
+const LIT_FLOAT: i32 = 1;
+const LIT_STRING: i32 = 2;
+const LIT_BOOL: i32 = 3;
+struct Literal {
+    kind: i32,
+    text: String,
+}
+
+// ---- 统一 Node ----
+// tag 决定哪个 slot 有效；无效 slot 置 0。payload 采用「名字+节点id」
+// 的通用形态，避免为 58 种变体各开一个字段（阶段 1 定型时按 usage 增补）。
+struct Node {
+    tag: i32,
+    span: Span,
+    // 通用 payload 槽：name 是字符串池 id (u64) + 三个整数 id/值槽，足够承载编译器前端的
+    // 递归引用（arena 索引）与标量载荷；扩大在阶段 1 接缝说明里登记。
+    name: u64,
+    a: usize,
+    b: usize,
+    c: i32,
+}
+
+// 构造辅助：建一个 Node（所有槽显式初始化，避免未初始化寄存器）。
+fn make_node(tag: i32, start: usize, end: usize) -> Node {
+    return Node{
+        tag: tag,
+        span: Span{ start: start, end: end },
+        name: 0,
+        a: 0,
+        b: 0,
+        c: 0,
+    };
+}
+
+@test "ast node construction"() {
+    let n = make_node(NODE_IDENTIFIER, 0, 3);
+    if n.tag != NODE_IDENTIFIER {
+        panic(1);
+    };
+    let lit = make_node(NODE_LITERAL, 4, 5);
+    if lit.tag != NODE_LITERAL {
+        panic(2);
+    };
+}

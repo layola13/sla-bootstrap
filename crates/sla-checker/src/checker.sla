@@ -1,0 +1,93 @@
+// sla-checker / 所有权状态机核心（阶段 1 起点）
+//
+// 对应 Zig: sa_plugin_sla/src/type_checker.zig 的所有权状态机 + 
+// sci/src/common/capability.zig 的 CapabilityMask/TRUTH_TABLE。
+// 参考: layola13/sla/crates/sla-checker/src（Rust 版 checker slice）。
+//
+// 这里先落最小状态机：仿射值的 active/consumed 转移 + 诊断码。
+// 全量 checker（表达式类型、借用、宏/extern 契约）按阶段 5 推进。
+// 阶段目标：能被 SLA 编译器 check 通过，作为 checker 移植的地基。
+
+// 仿射状态（对齐 capability.zig CapabilityMask 的位）。
+const ST_UNAINIT: u16 = 0;
+const ST_ACTIVE: u16 = 1;
+const ST_LOCKED_READ: u16 = 2;
+const ST_LOCKED_MUT: u16 = 4;
+const ST_CONSUMED: u16 = 8;
+
+// 诊断码（对齐 trap / TypeError 的稳定命名序号，最小集）。
+const DIAG_OK: i32 = 0;
+const DIAG_USE_AFTER_MOVE: i32 = 1009;
+const DIAG_BORROW_CONFLICT: i32 = 1008;
+const DIAG_MEMORY_LEAK: i32 = 1012;
+
+// 状态转移：alloc 一个新值 -> Active。
+fn op_alloc() -> u16 {
+    return ST_ACTIVE;
+}
+
+// 状态转移：move（消费），仅 Active 合法，转 Consumed。
+// 返回诊断码；new_state 通过 out 参数语义（这里用结构返回）。
+struct MoveResult {
+    diag: i32,
+    state: u16,
+}
+fn op_move(s: u16) -> MoveResult {
+    if s == ST_ACTIVE {
+        return MoveResult{ diag: DIAG_OK, state: ST_CONSUMED };
+    };
+    if s == ST_CONSUMED {
+        return MoveResult{ diag: DIAG_USE_AFTER_MOVE, state: s };
+    };
+    if s == ST_LOCKED_READ || s == ST_LOCKED_MUT {
+        return MoveResult{ diag: DIAG_BORROW_CONFLICT, state: s };
+    };
+    return MoveResult{ diag: DIAG_USE_AFTER_MOVE, state: s };
+}
+
+// 借用检查：对 Active 或 Locked_Read 加共享借用；Locked_Mut 冲突。
+fn op_borrow_read(s: u16) -> MoveResult {
+    if s == ST_ACTIVE {
+        return MoveResult{ diag: DIAG_OK, state: ST_LOCKED_READ };
+    };
+    if s == ST_LOCKED_READ {
+        return MoveResult{ diag: DIAG_OK, state: ST_LOCKED_READ };
+    };
+    return MoveResult{ diag: DIAG_BORROW_CONFLICT, state: s };
+}
+
+// 独占借用：仅 Active 合法；已有任何锁冲突。
+fn op_borrow_mut(s: u16) -> MoveResult {
+    if s == ST_ACTIVE {
+        return MoveResult{ diag: DIAG_OK, state: ST_LOCKED_MUT };
+    };
+    return MoveResult{ diag: DIAG_BORROW_CONFLICT, state: s };
+}
+
+@test "checker: move state machine"() {
+    let s = op_alloc();
+    let r = op_move(s);
+    if r.diag != DIAG_OK {
+        panic(1);
+    };
+    if r.state != ST_CONSUMED {
+        panic(2);
+    };
+    // 二次 move 报 UseAfterMove
+    let r2 = op_move(r.state);
+    if r2.diag != DIAG_USE_AFTER_MOVE {
+        panic(3);
+    };
+}
+
+@test "checker: borrow conflict"() {
+    let s = op_alloc();
+    let m = op_borrow_mut(s);
+    if m.diag != DIAG_OK {
+        panic(4);
+    };
+    let m2 = op_borrow_mut(m.state);
+    if m2.diag != DIAG_BORROW_CONFLICT {
+        panic(5);
+    };
+}
