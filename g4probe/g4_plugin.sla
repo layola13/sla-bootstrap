@@ -1,0 +1,37 @@
+// G4 探针：纯 SLA 源码导出插件描述符填充函数。
+// 宿主 loadDescriptor 接受 saasm_plugin_descriptor_v1_fn(out) 函数形式。
+// PluginDescriptor 64 字节布局（64 位）：
+//   +0 abi_version u32=1; +4 descriptor_size u32=64; +8 name ptr;
+//   +16..+56 函数指针/skills 全 0（宿主 validateDescriptor 只查前三项）。
+@import "sa_std/ptr.sa"
+@import "sa_std/string.sa"
+@import "sa_std/core/mem.sa"
+
+extern "C" fn saasm_plugin_descriptor_v1_fn(out: ptr) {
+    // +0/+4 一次写 64 位：低32=abi_version(1)，高32=descriptor_size(64)
+    PTR_WRITE_U64(out, 1 + (64 << 32));
+    // +8 name -> "g4probe"（SA 字符串字面量 NUL 结尾）
+    let p8: ptr = PTR_NULL();
+    PTR_BYTE_ADD(p8, out, 8);
+    PTR_WRITE_U64(p8, STR_PTR("g4probe"));
+    // +16..+56 清零（40 字节 = 5 个 u64）
+    let p16: ptr = PTR_NULL();
+    PTR_BYTE_ADD(p16, out, 16);
+    PTR_WRITE_U64(p16, 0);
+    let p24: ptr = PTR_NULL();
+    PTR_BYTE_ADD(p24, out, 24);
+    PTR_WRITE_U64(p24, 0);
+    let p32: ptr = PTR_NULL();
+    PTR_BYTE_ADD(p32, out, 32);
+    PTR_WRITE_U64(p32, 0);
+    let p40: ptr = PTR_NULL();
+    PTR_BYTE_ADD(p40, out, 40);
+    PTR_WRITE_U64(p40, 0);
+    let p48: ptr = PTR_NULL();
+    PTR_BYTE_ADD(p48, out, 48);
+    PTR_WRITE_U64(p48, 0);
+    let p56: ptr = PTR_NULL();
+    PTR_BYTE_ADD(p56, out, 56);
+    PTR_WRITE_U64(p56, 0);
+    mem::forget(out);
+}

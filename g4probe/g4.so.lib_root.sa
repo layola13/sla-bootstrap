@@ -1,0 +1,322 @@
+@import "sa_std/ptr.sa"
+@import "sa_std/string.sa"
+@import "sa_std/ptr.sa"
+@import "sa_std/string.sa"
+@import "sa_std/ptr.sa"
+@import "sa_std/string.sa"
+@import "g4.so.lib_glue.sa"
+@import "sa_std/string.sa"
+@import "sa_std/string_format.sa"
+@import "sa_std/io/print.sai"
+@import "sa_std/fmt.sai"
+@import "sa_std/core/panic.sa"
+
+[MACRO] SLA_ARRAY_FILL_U8 %array_ptr, %value, %length
+    call @sa_mem_set(&%array_ptr, %value, %length)
+[END_MACRO]
+@import "sa_std/mem.sa"
+@const SLA_FNPTR_VT_saasm_plugin_descriptor_v1_fn = vtable { call = @saasm_plugin_descriptor_v1_fn }
+@const SLA_FNPTR_VT_g4_plugin__saasm_plugin_descriptor_v1_fn = vtable { call = @g4_plugin__saasm_plugin_descriptor_v1_fn }
+@const SLA_FNPTR_VT_sa_lib_fwd_saasm_plugin_descriptor_v1_fn = vtable { call = @sa_lib_fwd_saasm_plugin_descriptor_v1_fn }
+@saasm_plugin_descriptor_v1_fn(out: ptr):
+L_ENTRY:
+    tmp_0 = out
+    out = stack_alloc 8
+    store out+0, tmp_0 as ptr
+    !tmp_0
+    tmp_1 = load out+0 as ptr
+    tmp_2 = 1
+    tmp_3 = 64
+    tmp_4 = 32
+    tmp_5 = shl tmp_3, tmp_4
+    !tmp_3
+    !tmp_4
+    tmp_6 = add tmp_2, tmp_5
+    !tmp_2
+    !tmp_5
+    EXPAND PTR_WRITE_U64 tmp_1, tmp_6
+    !tmp_1
+    !tmp_6
+    EXPAND PTR_NULL tmp_7
+    p8 = stack_alloc 8
+    store p8+0, tmp_7 as ptr
+    ^tmp_7
+    tmp_8 = load p8+0 as ptr
+    tmp_9 = load out+0 as ptr
+    tmp_10 = 8
+    EXPAND PTR_BYTE_ADD tmp_8, tmp_9, tmp_10
+    store p8+0, tmp_8 as ptr
+    ^tmp_8
+    !tmp_9
+    !tmp_10
+    tmp_11 = load p8+0 as ptr
+    @const SLA_STR_0 = utf8:"g4probe\0"
+    tmp_14 = 7
+    tmp_13 = stack_alloc Slice_SIZE
+    EXPAND SLICE_NEW tmp_13, &SLA_STR_0, tmp_14
+    !tmp_14
+    EXPAND STR_PTR tmp_12, tmp_13
+    EXPAND PTR_WRITE_U64 tmp_11, tmp_12
+    !tmp_11
+    !tmp_12
+    EXPAND PTR_NULL tmp_15
+    p16 = stack_alloc 8
+    store p16+0, tmp_15 as ptr
+    ^tmp_15
+    tmp_16 = load p16+0 as ptr
+    tmp_17 = load out+0 as ptr
+    tmp_18 = 16
+    EXPAND PTR_BYTE_ADD tmp_16, tmp_17, tmp_18
+    store p16+0, tmp_16 as ptr
+    ^tmp_16
+    !tmp_17
+    !tmp_18
+    tmp_19 = load p16+0 as ptr
+    tmp_20 = 0
+    EXPAND PTR_WRITE_U64 tmp_19, tmp_20
+    !tmp_19
+    !tmp_20
+    EXPAND PTR_NULL tmp_21
+    p24 = stack_alloc 8
+    store p24+0, tmp_21 as ptr
+    ^tmp_21
+    tmp_22 = load p24+0 as ptr
+    tmp_23 = load out+0 as ptr
+    tmp_24 = 24
+    EXPAND PTR_BYTE_ADD tmp_22, tmp_23, tmp_24
+    store p24+0, tmp_22 as ptr
+    ^tmp_22
+    !tmp_23
+    !tmp_24
+    tmp_25 = load p24+0 as ptr
+    tmp_26 = 0
+    EXPAND PTR_WRITE_U64 tmp_25, tmp_26
+    !tmp_25
+    !tmp_26
+    EXPAND PTR_NULL tmp_27
+    p32 = stack_alloc 8
+    store p32+0, tmp_27 as ptr
+    ^tmp_27
+    tmp_28 = load p32+0 as ptr
+    tmp_29 = load out+0 as ptr
+    tmp_30 = 32
+    EXPAND PTR_BYTE_ADD tmp_28, tmp_29, tmp_30
+    store p32+0, tmp_28 as ptr
+    ^tmp_28
+    !tmp_29
+    !tmp_30
+    tmp_31 = load p32+0 as ptr
+    tmp_32 = 0
+    EXPAND PTR_WRITE_U64 tmp_31, tmp_32
+    !tmp_31
+    !tmp_32
+    EXPAND PTR_NULL tmp_33
+    p40 = stack_alloc 8
+    store p40+0, tmp_33 as ptr
+    ^tmp_33
+    tmp_34 = load p40+0 as ptr
+    tmp_35 = load out+0 as ptr
+    tmp_36 = 40
+    EXPAND PTR_BYTE_ADD tmp_34, tmp_35, tmp_36
+    store p40+0, tmp_34 as ptr
+    ^tmp_34
+    !tmp_35
+    !tmp_36
+    tmp_37 = load p40+0 as ptr
+    tmp_38 = 0
+    EXPAND PTR_WRITE_U64 tmp_37, tmp_38
+    !tmp_37
+    !tmp_38
+    EXPAND PTR_NULL tmp_39
+    p48 = stack_alloc 8
+    store p48+0, tmp_39 as ptr
+    ^tmp_39
+    tmp_40 = load p48+0 as ptr
+    tmp_41 = load out+0 as ptr
+    tmp_42 = 48
+    EXPAND PTR_BYTE_ADD tmp_40, tmp_41, tmp_42
+    store p48+0, tmp_40 as ptr
+    ^tmp_40
+    !tmp_41
+    !tmp_42
+    tmp_43 = load p48+0 as ptr
+    tmp_44 = 0
+    EXPAND PTR_WRITE_U64 tmp_43, tmp_44
+    !tmp_43
+    !tmp_44
+    EXPAND PTR_NULL tmp_45
+    p56 = stack_alloc 8
+    store p56+0, tmp_45 as ptr
+    ^tmp_45
+    tmp_46 = load p56+0 as ptr
+    tmp_47 = load out+0 as ptr
+    tmp_48 = 56
+    EXPAND PTR_BYTE_ADD tmp_46, tmp_47, tmp_48
+    store p56+0, tmp_46 as ptr
+    ^tmp_46
+    !tmp_47
+    !tmp_48
+    tmp_49 = load p56+0 as ptr
+    tmp_50 = 0
+    EXPAND PTR_WRITE_U64 tmp_49, tmp_50
+    !tmp_49
+    !tmp_50
+    tmp_51 = load out+0 as ptr
+    EXPAND MEM_FORGET_U64 tmp_51
+    !tmp_51
+    return
+
+@g4_plugin__saasm_plugin_descriptor_v1_fn(out: ptr):
+L_ENTRY:
+    tmp_52 = out
+    out = stack_alloc 8
+    store out+0, tmp_52 as ptr
+    !tmp_52
+    tmp_53 = load out+0 as ptr
+    tmp_54 = 1
+    tmp_55 = 64
+    tmp_56 = 32
+    tmp_57 = shl tmp_55, tmp_56
+    !tmp_55
+    !tmp_56
+    tmp_58 = add tmp_54, tmp_57
+    !tmp_54
+    !tmp_57
+    EXPAND PTR_WRITE_U64 tmp_53, tmp_58
+    !tmp_53
+    !tmp_58
+    EXPAND PTR_NULL tmp_59
+    p8 = stack_alloc 8
+    store p8+0, tmp_59 as ptr
+    ^tmp_59
+    tmp_60 = load p8+0 as ptr
+    tmp_61 = load out+0 as ptr
+    tmp_62 = 8
+    EXPAND PTR_BYTE_ADD tmp_60, tmp_61, tmp_62
+    store p8+0, tmp_60 as ptr
+    ^tmp_60
+    !tmp_61
+    !tmp_62
+    tmp_63 = load p8+0 as ptr
+    @const SLA_STR_1 = utf8:"g4probe\0"
+    tmp_66 = 7
+    tmp_65 = stack_alloc Slice_SIZE
+    EXPAND SLICE_NEW tmp_65, &SLA_STR_1, tmp_66
+    !tmp_66
+    EXPAND STR_PTR tmp_64, tmp_65
+    EXPAND PTR_WRITE_U64 tmp_63, tmp_64
+    !tmp_63
+    !tmp_64
+    EXPAND PTR_NULL tmp_67
+    p16 = stack_alloc 8
+    store p16+0, tmp_67 as ptr
+    ^tmp_67
+    tmp_68 = load p16+0 as ptr
+    tmp_69 = load out+0 as ptr
+    tmp_70 = 16
+    EXPAND PTR_BYTE_ADD tmp_68, tmp_69, tmp_70
+    store p16+0, tmp_68 as ptr
+    ^tmp_68
+    !tmp_69
+    !tmp_70
+    tmp_71 = load p16+0 as ptr
+    tmp_72 = 0
+    EXPAND PTR_WRITE_U64 tmp_71, tmp_72
+    !tmp_71
+    !tmp_72
+    EXPAND PTR_NULL tmp_73
+    p24 = stack_alloc 8
+    store p24+0, tmp_73 as ptr
+    ^tmp_73
+    tmp_74 = load p24+0 as ptr
+    tmp_75 = load out+0 as ptr
+    tmp_76 = 24
+    EXPAND PTR_BYTE_ADD tmp_74, tmp_75, tmp_76
+    store p24+0, tmp_74 as ptr
+    ^tmp_74
+    !tmp_75
+    !tmp_76
+    tmp_77 = load p24+0 as ptr
+    tmp_78 = 0
+    EXPAND PTR_WRITE_U64 tmp_77, tmp_78
+    !tmp_77
+    !tmp_78
+    EXPAND PTR_NULL tmp_79
+    p32 = stack_alloc 8
+    store p32+0, tmp_79 as ptr
+    ^tmp_79
+    tmp_80 = load p32+0 as ptr
+    tmp_81 = load out+0 as ptr
+    tmp_82 = 32
+    EXPAND PTR_BYTE_ADD tmp_80, tmp_81, tmp_82
+    store p32+0, tmp_80 as ptr
+    ^tmp_80
+    !tmp_81
+    !tmp_82
+    tmp_83 = load p32+0 as ptr
+    tmp_84 = 0
+    EXPAND PTR_WRITE_U64 tmp_83, tmp_84
+    !tmp_83
+    !tmp_84
+    EXPAND PTR_NULL tmp_85
+    p40 = stack_alloc 8
+    store p40+0, tmp_85 as ptr
+    ^tmp_85
+    tmp_86 = load p40+0 as ptr
+    tmp_87 = load out+0 as ptr
+    tmp_88 = 40
+    EXPAND PTR_BYTE_ADD tmp_86, tmp_87, tmp_88
+    store p40+0, tmp_86 as ptr
+    ^tmp_86
+    !tmp_87
+    !tmp_88
+    tmp_89 = load p40+0 as ptr
+    tmp_90 = 0
+    EXPAND PTR_WRITE_U64 tmp_89, tmp_90
+    !tmp_89
+    !tmp_90
+    EXPAND PTR_NULL tmp_91
+    p48 = stack_alloc 8
+    store p48+0, tmp_91 as ptr
+    ^tmp_91
+    tmp_92 = load p48+0 as ptr
+    tmp_93 = load out+0 as ptr
+    tmp_94 = 48
+    EXPAND PTR_BYTE_ADD tmp_92, tmp_93, tmp_94
+    store p48+0, tmp_92 as ptr
+    ^tmp_92
+    !tmp_93
+    !tmp_94
+    tmp_95 = load p48+0 as ptr
+    tmp_96 = 0
+    EXPAND PTR_WRITE_U64 tmp_95, tmp_96
+    !tmp_95
+    !tmp_96
+    EXPAND PTR_NULL tmp_97
+    p56 = stack_alloc 8
+    store p56+0, tmp_97 as ptr
+    ^tmp_97
+    tmp_98 = load p56+0 as ptr
+    tmp_99 = load out+0 as ptr
+    tmp_100 = 56
+    EXPAND PTR_BYTE_ADD tmp_98, tmp_99, tmp_100
+    store p56+0, tmp_98 as ptr
+    ^tmp_98
+    !tmp_99
+    !tmp_100
+    tmp_101 = load p56+0 as ptr
+    tmp_102 = 0
+    EXPAND PTR_WRITE_U64 tmp_101, tmp_102
+    !tmp_101
+    !tmp_102
+    tmp_103 = load out+0 as ptr
+    EXPAND MEM_FORGET_U64 tmp_103
+    !tmp_103
+    return
+
+@sa_lib_fwd_saasm_plugin_descriptor_v1_fn(out: ptr):
+L_ENTRY:
+    call @saasm_plugin_descriptor_v1_fn(out)
+    !out
+    return
+

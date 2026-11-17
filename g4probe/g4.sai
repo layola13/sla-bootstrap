@@ -1,0 +1,1 @@
+@export saasm_plugin_descriptor_v1_fn(out: ptr) -> void
